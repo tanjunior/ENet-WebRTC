@@ -85,46 +85,45 @@ remotesync func add_message(_message_data):
 remote func lobby_created():
 	var lobby : Dictionary = {}
 	var caller_id = get_tree().get_rpc_sender_id()
-	var secret = ""
+	var lobby_id = ""
 	for _i in range(0, 32):
-		secret += char(_alfnum[rand.randi_range(0, ALFNUM.length()-1)])
-	rset_id(caller_id, "my_secret", secret)
+		lobby_id += char(_alfnum[rand.randi_range(0, ALFNUM.length()-1)])
+	rset_id(caller_id, "my_lobby_id", lobby_id)
 	var player = {caller_id:{"name":users[caller_id]}}
 	lobby["host"] = users[caller_id]
 	lobby["players"] = player
-	lobbies[secret] = lobby
+	lobbies[lobby_id] = lobby
 
-	print(lobbies[secret])
 	#update all users of new lobby
-	print("User: %s created a lobby %s" %[users[caller_id], secret])
-	rpc("lobby_created", secret, lobbies[secret])
+	print("User: %s created a lobby %s" %[users[caller_id], lobby_id])
+	rpc("lobby_created", lobby_id, lobbies[lobby_id])
 
-remote func lobby_joined(secret):
+remote func lobby_joined(lobby_id):
 	var caller_id = get_tree().get_rpc_sender_id()
-	rset_id(caller_id, "my_secret", secret)
+	rset_id(caller_id, "my_lobby_id", lobby_id)
 	
 	#add new player in to lobby player list
 	var new_player_data = {"name":users[caller_id]}
-	lobbies[secret].players[caller_id] = new_player_data
+	lobbies[lobby_id].players[caller_id] = new_player_data
 
 	rpc("lobby_updated", "join", caller_id, new_player_data)
 
-remote func lobby_left(secret):
+remote func lobby_left(lobby_id):
 	var caller_id = get_tree().get_rpc_sender_id()
 	
-	lobbies[secret].players.erase(caller_id)
-	if lobbies[secret].players.size() == 0:
-		lobbies.erase(secret)
+	lobbies[lobby_id].players.erase(caller_id)
+	if lobbies[lobby_id].players.size() == 0:
+		lobbies.erase(lobby_id)
 		rset("lobbies", lobbies)
 	else:
 		rpc("lobby_updated", "left", caller_id)
 	
-remote func start_game(secret):
+remote func start_game(lobby_id):
 	var caller_id = get_tree().get_rpc_sender_id()
 	var next_peer_id = 2
 	var game = { "players" : {}}
-	for user_id in lobbies[secret].players:
-		var player_data = lobbies[secret].players[user_id]
+	for user_id in lobbies[lobby_id].players:
+		var player_data = lobbies[lobby_id].players[user_id]
 		
 		game.players[user_id] = player_data
 		if user_id == caller_id:
@@ -136,7 +135,7 @@ remote func start_game(secret):
 		rset_id(p, "players", game.players)
 
 	for p in game.players:
-		rpc_id(p, "init_rtc")
+		rpc_id(p, "init_game")
 	
 remote func get_lobbies():
 	var caller_id = get_tree().get_rpc_sender_id()

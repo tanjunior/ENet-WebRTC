@@ -1,3 +1,5 @@
 *.import
-Client/.import
-Server/.import
+Client/.import/
+Server/.import/
+*.exe
+*.pck

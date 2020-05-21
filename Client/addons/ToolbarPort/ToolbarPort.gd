@@ -16,5 +16,6 @@ func _exit_tree():
 	remove_control_from_container(EditorPlugin.CONTAINER_TOOLBAR, control)
 	control.queue_free()
 
+
 func _on_setting_changed(port):
 	get_editor_interface().get_editor_settings().set_setting("network/debug/remote_port", int(port))

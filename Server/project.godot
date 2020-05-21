@@ -23,10 +23,6 @@ config/icon="res://icon.png"
 
 gamestate="*res://gamestate.gd"
 
-[editor_plugins]
-
-enabled=PoolStringArray( "ToolbarPort" )
-
 [gdnative]
 
 singletons=[  ]

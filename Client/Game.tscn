@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://webrtc.gd" type="Script" id=1]
+
+[node name="Game" type="Node"]
+
+[node name="webrtc" type="Node" parent="."]
+script = ExtResource( 1 )
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Button" type="Button" parent="."]
+margin_left = 422.731
+margin_top = 180.822
+margin_right = 577.731
+margin_bottom = 274.822
+disabled = true
+text = "test rpc"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+[connection signal="pressed" from="Button" to="." method="_on_Button_pressed"]

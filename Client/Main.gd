@@ -6,7 +6,7 @@ onready var chatBox = $Panel/VBoxContainer/MainBox/CenterBox/ChatBox
 onready var userList = $Panel/VBoxContainer/MainBox/RightBox/ScrollContainer/UserList
 onready var lobbyList = $Panel/VBoxContainer/MainBox/LeftBox/VBoxContainer/ScrollContainer/LobbyList
 onready var playerList = $Panel2/VBoxContainer2/HBoxContainer2/PlayerList
-
+var game = preload("res://Game.tscn")
 
 func _ready():
 # warning-ignore:return_value_discarded
@@ -16,7 +16,7 @@ func _ready():
 # warning-ignore:return_value_discarded
 	gamestate.connect("disconnected", self, "_on_disconnected")
 # warning-ignore:return_value_discarded
-	gamestate.connect("update_secret", self, "_update_secret")
+	gamestate.connect("update_lobby_id", self, "_update_lobby_id")
 # warning-ignore:return_value_discarded
 	gamestate.connect("update_user_list", self, "_update_user_list")
 # warning-ignore:return_value_discarded
@@ -79,8 +79,8 @@ func _update_user_list():
 	for user in gamestate.get_user_list():
 		userList.add_item(str(user), null, true)
 		
-func _update_secret(secret):
-	$Panel2/VBoxContainer2/LobbyName.text = secret
+func _update_lobby_id(lobby_id):
+	$Panel2/VBoxContainer2/LobbyName.text = lobby_id
 	
 func _update_messages(message_data):
 	var message = message_data["name"] + ": " + message_data["text"]
@@ -92,13 +92,13 @@ func _update_lobby_list():
 		lobbyList.add_item(str(lobby), null, false)
 
 func _update_player_list():
-	for player_id in gamestate.lobbies[gamestate.my_secret].players:
-		var player_name = gamestate.lobbies[gamestate.my_secret].players[player_id].name
+	for player_id in gamestate.lobbies[gamestate.my_lobby_id].players:
+		var player_name = gamestate.lobbies[gamestate.my_lobby_id].players[player_id].name
 		playerList.add_item(player_name, null, true)
 	
 func _on_LobbyList_item_activated(index):
-	var secret = lobbyList.get_item_text(index)
-	gamestate.rpc_id(1, "lobby_joined", secret)
+	var lobby_id = lobbyList.get_item_text(index)
+	gamestate.rpc_id(1, "lobby_joined", lobby_id)
 	$Panel2.show()
 	
 func _on_ClientUI_closed():
@@ -106,14 +106,14 @@ func _on_ClientUI_closed():
 
 
 func _on_Close_pressed():
-	gamestate.rpc_id(1, "lobby_left", gamestate.my_secret)
-	gamestate.my_secret = ""
+	gamestate.rpc_id(1, "lobby_left", gamestate.my_lobby_id)
+	gamestate.my_lobby_id = ""
 	$Panel2.hide()
 
 
 
 func _on_Start_pressed():
-	gamestate.rpc_id(1, "start_game", gamestate.my_secret)
+	gamestate.rpc_id(1, "start_game", gamestate.my_lobby_id)
 
 
 func _on_Ready_pressed():
