@@ -1,1 +1,0 @@
-godot --path %~dp0../Server
