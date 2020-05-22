@@ -1,11 +1,9 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://webrtc.gd" type="Script" id=1]
+[ext_resource path="res://Game.gd" type="Script" id=2]
 
 [node name="Game" type="Node"]
-
-[node name="webrtc" type="Node" parent="."]
-script = ExtResource( 1 )
+script = ExtResource( 2 )
 
 [node name="World" type="Node2D" parent="."]
 
@@ -19,4 +17,21 @@ text = "test rpc"
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="Button2" type="Button" parent="."]
+margin_left = 425.989
+margin_top = 323.361
+margin_right = 580.989
+margin_bottom = 417.361
+text = "leave game"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="AcceptDialog" type="AcceptDialog" parent="."]
+margin_left = 86.8549
+margin_top = 228.613
+margin_right = 384.855
+margin_bottom = 388.613
 [connection signal="pressed" from="Button" to="." method="_on_Button_pressed"]
+[connection signal="pressed" from="Button2" to="." method="_on_Button2_pressed"]

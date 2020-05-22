@@ -1,4 +1,5 @@
 extends Node
+class_name Webrtc
 
 var webrtc_multiplayer : WebRTCMultiplayer
 var webrtc_peer : WebRTCPeerConnection
@@ -6,6 +7,7 @@ var webrtc_peers : Dictionary #Dictionary of WebRTCPeerConnection objects
 var webrtc_peers_connected : Dictionary
 var webrtc : MultiplayerAPI = MultiplayerAPI.new()
 signal game_start
+signal popup
 var poll = false
 
 func _ready():
@@ -19,7 +21,9 @@ func _process(_delta):
 	webrtc.poll()
 	
 func init_rtc():
+	leave()
 	poll = true
+
 	_create_webrtc_multiplayer()
 	webrtc_multiplayer.initialize(gamestate.my_peer_id)
 	webrtc.set_network_peer(webrtc_multiplayer)
@@ -29,7 +33,7 @@ func init_rtc():
 func _create_webrtc_multiplayer():
 	webrtc_multiplayer = WebRTCMultiplayer.new()
 # warning-ignore:return_value_discarded
-	webrtc_multiplayer.connect("peer_connected", self, "_on_webrtc_peer_connected")
+	webrtc_multiplayer.connect("peer_connected", self, "_on_peer_connected")
 # warning-ignore:return_value_discarded
 	webrtc_multiplayer.connect("peer_disconnected", self, "_on_peer_disconnected")
 	
@@ -78,7 +82,8 @@ func _on_session_description_created(type : String, sdp : String, user_id):
 				type = type,
 				sdp = sdp,
 			}
-	gamestate.rpc_id(user_id, "rtc_handshake", data)
+	if gamestate.lobbies[gamestate.my_lobby_id].players.has(user_id):
+		gamestate.rpc_id(user_id, "rtc_handshake", data)
 	
 func _on_ice_candidate_created(media : String, index : int, name : String, user_id):
 	print("[_on_ice_candidate_created] %s" %user_id)
@@ -90,7 +95,8 @@ func _on_ice_candidate_created(media : String, index : int, name : String, user_
 				index = index,
 				name = name,
 			}
-	gamestate.rpc_id(user_id, "rtc_handshake", data)
+	if gamestate.lobbies[gamestate.my_lobby_id].players.has(user_id):
+		gamestate.rpc_id(user_id, "rtc_handshake", data)
 
 func _on_rtc_handshake(caller_id, data):
 	if data.target == gamestate.my_id:
@@ -107,13 +113,34 @@ func _on_rtc_handshake(caller_id, data):
 				var err = webrtc_peer.add_ice_candidate(data.media, data.index, data.name)
 				if err != OK:
 					print("[add_ice_candidate] failed")
+					retry(caller_id, gamestate.players[caller_id])
 				else:
 					print("[add_ice_candidate] on %s" %caller_id)
 #			'reconnect':
 #				webrtc_multiplayer.remove_peer(gamestate.players[caller_id].peer_id)
 ##						_webrtc_reconnect_peer(players[session_id])
+func retry(user_id, u):
+	var _webrtc_peer : WebRTCPeerConnection = webrtc_peers[user_id]
+	webrtc_multiplayer.remove_peer(u.peer_id)
+	_webrtc_peer.disconnect("session_description_created", self, "_on_session_description_created")
+	_webrtc_peer.disconnect("ice_candidate_created", self, "_on_ice_candidate_created")
+	_webrtc_peer.close()
+	_webrtc_peer.initialize({
+		"iceServers": [{ "urls": ["stun:stun.l.google.com:19302"] }]
+	})
+# warning-ignore:return_value_discarded
+	webrtc_peer.connect("session_description_created", self, "_on_session_description_created", [user_id])
+# warning-ignore:return_value_discarded
+	webrtc_peer.connect("ice_candidate_created", self, "_on_ice_candidate_created", [user_id])
 
-func _on_webrtc_peer_connected(peer_id: int):
+	webrtc_multiplayer.add_peer(webrtc_peer, u.peer_id)
+	
+	if gamestate.my_id != user_id:
+		var err = webrtc_peer.create_offer()
+		if err == OK:
+			print("Retry created offer for %s" %[user_id])
+
+func _on_peer_connected(peer_id: int):
 	for user_id in gamestate.players:
 		if gamestate.players[user_id].peer_id == peer_id:
 			webrtc_peers_connected[user_id] = true
@@ -123,13 +150,35 @@ func _on_webrtc_peer_connected(peer_id: int):
 
 	# We have a WebRTC peer for each connection to another player, so we'll have one less than
 	# the number of players (ie. no peer connection to ourselves).
-	print("[_on_webrtc_peer_connected]")
+	print("[_on_peer_connected]")
 	emit_signal("game_start")
 
 func _on_peer_disconnected(peer_id: int):
+	for user_id in gamestate.players:
+		if gamestate.players[user_id].peer_id == peer_id:
+			webrtc_multiplayer.remove_peer(peer_id)
+			webrtc_peers_connected[user_id] = false
+			webrtc_peer = webrtc_peers[user_id]
+			webrtc_peer.disconnect("session_description_created", self, "_on_session_description_created")
+			webrtc_peer.disconnect("ice_candidate_created", self, "_on_ice_candidate_created")
+			webrtc_peers.erase(user_id)
 	pass
-	
-remote func test():
-	var caller_id = webrtc.get_rpc_sender_id()
-	var my_id = webrtc.get_network_unique_id()
-	print("[%s] hi %s" %[caller_id, my_id])
+
+
+
+func leave():
+	poll = false
+	if webrtc_multiplayer:
+		webrtc_multiplayer.disconnect("peer_connected", self, "_on_peer_connected")
+		webrtc_multiplayer.disconnect("peer_disconnected", self, "_on_peer_disconnected")
+		webrtc_multiplayer.close()
+		webrtc.set_network_peer(null)
+		gamestate.players.clear()
+		webrtc_peer = null
+		webrtc_peers.clear()
+		webrtc_peers_connected.clear()
+		webrtc_multiplayer = null
+		gamestate.disconnect("rtc_handshake", self, "_on_rtc_handshake")
+		gamestate.rpc_id(1, "leave_game", gamestate.my_lobby_id)
+#		yield(get_tree().create_timer(1.0),"timeout")
+		get_tree().change_scene("res://Main.tscn")

@@ -1,6 +1,6 @@
 *.import
-Client/.import/
-Server/.import/
+**/.import
 *.exe
 *.pck
 *.bat
+**/*.import

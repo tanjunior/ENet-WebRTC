@@ -9,23 +9,21 @@ const DEFAULT_PORT = 44444
 signal failed
 signal connected
 signal disconnected
-signal update_lobby_id(lobby_id)
-signal update_messages(message_data)
 signal update_user_list
 signal update_lobby_list
 signal update_player_list
+signal update_lobby_id(lobby_id)
+signal update_messages(message_data)
 signal rtc_handshake(caller_id, data)
 
 
 #var game = preload("res://Game.tscn")
-var is_host = false
-remote var my_lobby_id setget set_lobby_id
-remote var my_name = "Client"
-var my_peer_id
 var my_id
-# User dict stored as id:name
+var my_peer_id
+var is_host : bool = false
+remote var my_name = "Client"
+remote var my_lobby_id setget set_lobby_id
 remote var users : Dictionary = {} setget set_users
-# Lobbies dict stored as id:{users}
 remote var lobbies: Dictionary = {} setget set_lobbies
 remote var players: Dictionary = {} setget set_players
 
@@ -102,9 +100,11 @@ func send_message(message_data):
 remotesync func add_message(message_data):
 	emit_signal("update_messages", message_data)
 
-remote func lobby_created(lobby_id, lobby):
+remote func lobby_created(lobby_id, lobby, host_id):
 	self.lobbies[lobby_id] = lobby
 	print("lobby_created")
+	if host_id == my_id:
+		emit_signal("update_player_list")
 
 remote func lobby_updated(state, id, new_player_data = null):
 	if state == "join":
@@ -127,16 +127,18 @@ func set_players(value):
 	players = value
 	my_peer_id = players[my_id].peer_id
 	print("Received players")
+	init_game()
 	
 func set_lobby_id(value):
 	my_lobby_id = value
 	emit_signal("update_lobby_id", my_lobby_id)
 
-remote func init_game():
+func init_game():
 #	get_tree().change_scene_to(game)
 	get_tree().change_scene("res://Game.tscn")
 #	webrtc.init_rtc()
 
 remote func rtc_handshake(data):
 	var caller_id = get_tree().get_rpc_sender_id()
-	emit_signal("rtc_handshake", caller_id, data)
+	if lobbies[gamestate.my_lobby_id].players.has(caller_id):
+		emit_signal("rtc_handshake", caller_id, data)
