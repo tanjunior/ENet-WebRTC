@@ -44,9 +44,17 @@ func _user_connected(_id):
 
 # Callback from SceneTree, called when client disconnects
 func _user_disconnected(id):
-	rpc("user_disconnected", id)
-	users.erase(id)
 	print("Client ", id, " disconnected")
+	rpc("user_disconnected", id)
+	var lobb
+	if users[id].has("lobby_id"):
+		var lobby_id = users[id].lobby_id
+		print("this user has key:lobby_id, value:%s" %lobby_id)
+		lobbies[lobby_id].players.erase(id)
+		if lobbies[lobby_id].players.size() == 0:
+			lobbies.erase(lobby_id)
+			rset("lobbies", lobbies)
+	users.erase(id)
 
 
 # Player management functions
@@ -55,8 +63,10 @@ remote func register_user(user_name):
 	var caller_id = get_tree().get_rpc_sender_id()
 
 	# Add number increment to name if duplicate
-	var names = users.values()
+	var names:Array = []
 	var i = 1
+	for user_id in users:
+		names.append(users[user_id].name) 
 	while names.has(user_name):
 		var new_user_name = user_name + str(i)
 		i = i + 1
@@ -66,16 +76,16 @@ remote func register_user(user_name):
 	rset_id(caller_id, "my_name", user_name)
 	
 	# Add him to our list
-	users[caller_id] = user_name
+	users[caller_id] = {"name":user_name}
 	# Send user and lobby list to new player
 	rset_id(caller_id, "users", users)
 	rset_id(caller_id, "lobbies", lobbies)
 	
 	# Send new dude to all players
-	for p_id in users:
-		if p_id == caller_id:
+	for user_id in users:
+		if user_id == caller_id:
 			continue
-		rpc_id(p_id, "user_connected", caller_id, users[caller_id])
+		rpc_id(user_id, "user_connected", caller_id, users[caller_id])
 
 	print("Client ", caller_id, " registered as ", user_name)
 
@@ -89,21 +99,22 @@ remote func lobby_created():
 	for _i in range(0, 32):
 		lobby_id += char(_alfnum[rand.randi_range(0, ALFNUM.length()-1)])
 	rset_id(caller_id, "my_lobby_id", lobby_id)
-	var player = {caller_id:{"name":users[caller_id]}}
-	lobby["host"] = users[caller_id]
+	var player = {caller_id:{"name":users[caller_id].name}}
+	lobby["host"] = caller_id
 	lobby["players"] = player
 	lobbies[lobby_id] = lobby
-
+	users[caller_id]["lobby_id"] = lobby_id
 	#update all users of new lobby
-	print("User: %s created a lobby %s" %[users[caller_id], lobby_id])
-	rpc("lobby_created", lobby_id, lobbies[lobby_id])
+	print("User: %s created a lobby %s" %[users[caller_id].name, lobby_id])
+	rpc("lobby_created", lobby_id, lobbies[lobby_id], caller_id)
 
 remote func lobby_joined(lobby_id):
 	var caller_id = get_tree().get_rpc_sender_id()
 	rset_id(caller_id, "my_lobby_id", lobby_id)
 	
 	#add new player in to lobby player list
-	var new_player_data = {"name":users[caller_id]}
+	var new_player_data = {"name":users[caller_id].name}
+	users[caller_id]["lobby_id"] = lobby_id
 	lobbies[lobby_id].players[caller_id] = new_player_data
 
 	rpc("lobby_updated", "join", caller_id, new_player_data)
@@ -111,6 +122,7 @@ remote func lobby_joined(lobby_id):
 remote func lobby_left(lobby_id):
 	var caller_id = get_tree().get_rpc_sender_id()
 	
+	users[caller_id].erase("lobby_id")
 	lobbies[lobby_id].players.erase(caller_id)
 	if lobbies[lobby_id].players.size() == 0:
 		lobbies.erase(lobby_id)
@@ -131,11 +143,25 @@ remote func start_game(lobby_id):
 			continue
 		game.players[user_id].peer_id = next_peer_id
 		next_peer_id += 1
-	for p in game.players:
-		rset_id(p, "players", game.players)
+		
+	for user_id in game.players:
+		rset_id(user_id, "players", game.players)
+#		rpc_id(user_id, "init_game")
 
-	for p in game.players:
-		rpc_id(p, "init_game")
+#	for user_id in game.players:
+#		rpc_id(user_id, "init_game")
+
+remote func leave_game(lobby_id):
+	var caller_id = get_tree().get_rpc_sender_id()
+
+	users[caller_id].erase("lobby_id")
+	lobbies[lobby_id].players.erase(caller_id)
+	if lobbies[lobby_id].players.size() == 0:
+		lobbies.erase(lobby_id)
+		rset("lobbies", lobbies)
+	else:
+		rpc("lobby_updated", "left", caller_id)
+		pass
 	
 remote func get_lobbies():
 	var caller_id = get_tree().get_rpc_sender_id()
