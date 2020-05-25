@@ -1,7 +1,7 @@
 tool
 extends CenterContainer
 
-signal setting_changed
+signal setting_changed(port)
 var edit
 
 func _enter_tree():
@@ -9,4 +9,4 @@ func _enter_tree():
 
 
 func _on_LineEdit_text_changed(new_text):
-	emit_signal("setting_changed", new_text)
+	emit_signal("setting_changed", int(new_text))

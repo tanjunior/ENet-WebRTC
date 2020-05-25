@@ -1,6 +1,4 @@
-*.import
-**/.import
-*.exe
-*.pck
-*.bat
-**/*.import
+**.import
+**.exe
+**.pck
+**.bat

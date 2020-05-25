@@ -117,7 +117,7 @@ remote func lobby_joined(lobby_id):
 	users[caller_id]["lobby_id"] = lobby_id
 	lobbies[lobby_id].players[caller_id] = new_player_data
 
-	rpc("lobby_updated", "join", caller_id, new_player_data)
+	rpc("lobby_updated", "join", lobby_id, caller_id, new_player_data)
 
 remote func lobby_left(lobby_id):
 	var caller_id = get_tree().get_rpc_sender_id()
@@ -128,7 +128,7 @@ remote func lobby_left(lobby_id):
 		lobbies.erase(lobby_id)
 		rset("lobbies", lobbies)
 	else:
-		rpc("lobby_updated", "left", caller_id)
+		rpc("lobby_updated", "left", lobby_id, caller_id, null)
 	
 remote func start_game(lobby_id):
 	var caller_id = get_tree().get_rpc_sender_id()
@@ -151,17 +151,6 @@ remote func start_game(lobby_id):
 #	for user_id in game.players:
 #		rpc_id(user_id, "init_game")
 
-remote func leave_game(lobby_id):
-	var caller_id = get_tree().get_rpc_sender_id()
-
-	users[caller_id].erase("lobby_id")
-	lobbies[lobby_id].players.erase(caller_id)
-	if lobbies[lobby_id].players.size() == 0:
-		lobbies.erase(lobby_id)
-		rset("lobbies", lobbies)
-	else:
-		rpc("lobby_updated", "left", caller_id)
-		pass
 	
 remote func get_lobbies():
 	var caller_id = get_tree().get_rpc_sender_id()

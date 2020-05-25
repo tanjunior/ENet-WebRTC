@@ -150,8 +150,10 @@ margin_right = 412.0
 margin_bottom = 561.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
+items = [ "0adasdasd", null, false, "5/5", null, false ]
 allow_reselect = true
 allow_rmb_select = true
+max_columns = 2
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MainLobby/VBoxContainer/MainBox/LeftBox/VBoxContainer"]
 margin_top = 565.0

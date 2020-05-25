@@ -22,10 +22,9 @@ __meta__ = {
 }
 
 [node name="Label" type="Label" parent="HBoxContainer"]
+margin_top = 5.0
 margin_right = 80.0
-margin_bottom = 24.0
-size_flags_horizontal = 3
-size_flags_vertical = 3
+margin_bottom = 19.0
 text = "Remote Port"
 __meta__ = {
 "_edit_use_anchors_": false

@@ -22,7 +22,7 @@ var my_id
 var my_peer_id
 var is_host : bool = false
 remote var my_name = "Client"
-remote var my_lobby_id setget set_lobby_id
+remote var my_lobby_id setget set_my_lobby_id
 remote var users : Dictionary = {} setget set_users
 remote var lobbies: Dictionary = {} setget set_lobbies
 remote var players: Dictionary = {} setget set_players
@@ -106,12 +106,13 @@ remote func lobby_created(lobby_id, lobby, host_id):
 	if host_id == my_id:
 		emit_signal("update_player_list")
 
-remote func lobby_updated(state, id, new_player_data = null):
+remote func lobby_updated(state, lobby_id, id, new_player_data = null):
 	if state == "join":
-		self.lobbies[my_lobby_id].players[id] = new_player_data
+		self.lobbies[lobby_id].players[id] = new_player_data
 	if state == "left":
-		self.lobbies[my_lobby_id].players.erase(id)
-	emit_signal("update_player_list")
+		self.lobbies[lobby_id].players.erase(id)
+	if my_lobby_id == lobby_id:
+		emit_signal("update_player_list")
 
 func set_lobbies(value):
 	lobbies = value
@@ -129,14 +130,13 @@ func set_players(value):
 	print("Received players")
 	init_game()
 	
-func set_lobby_id(value):
+func set_my_lobby_id(value):
 	my_lobby_id = value
 	emit_signal("update_lobby_id", my_lobby_id)
 
 func init_game():
 #	get_tree().change_scene_to(game)
 	get_tree().change_scene("res://Game.tscn")
-#	webrtc.init_rtc()
 
 remote func rtc_handshake(data):
 	var caller_id = get_tree().get_rpc_sender_id()

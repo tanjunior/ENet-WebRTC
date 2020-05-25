@@ -23,6 +23,10 @@ config/icon="res://icon.png"
 
 gamestate="*res://gamestate.gd"
 
+[custom_settings]
+
+remote_port=6200
+
 [editor_plugins]
 
 enabled=PoolStringArray( "ToolbarPort" )

@@ -96,6 +96,7 @@ func _update_messages(message_data):
 func _update_lobby_list():
 	lobbyList.clear()
 	for lobby in gamestate.lobbies:
+		lobbyList.add_item(str(gamestate.lobbies[lobby].players.size())+"/5", null, false)
 		lobbyList.add_item(str(lobby), null, false)
 
 func _update_player_list():
@@ -106,6 +107,7 @@ func _update_player_list():
 	
 func _on_LobbyList_item_activated(index):
 	var lobby_id = lobbyList.get_item_text(index)
+	gamestate.my_lobby_id = lobby_id
 	gamestate.rpc_id(1, "lobby_joined", lobby_id)
 	$GameLobby.show()
 	
