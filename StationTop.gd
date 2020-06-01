@@ -1,3 +1,0 @@
-extends Position3D
-
-

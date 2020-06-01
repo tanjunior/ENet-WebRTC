@@ -4,6 +4,3 @@
 **.bat
 **.glb
 addons/
-TestLevel.gd
-TestLevel.tscn
-TestCharacter.gd
